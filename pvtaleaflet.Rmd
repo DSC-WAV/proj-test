@@ -1,0 +1,156 @@
+---
+title: "PVTA & Valley Bikes Combined Leaflet"
+author: "Margaret Zhang"
+date: "4/2/2020"
+output:
+  html_document:
+    df_print: kable
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 2
+    toc_float:
+      collapsed: no
+    code_folding: hide
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+---
+
+
+
+```{r, message=FALSE, echo=FALSE}
+library(dplyr)
+library(valleybike)
+library(leaflet)
+library(readxl)
+```
+
+
+```{r, echo=FALSE, warning=FALSE}
+  pvta_stops <- read_excel("~/GitHub/proj-valleybike/data/pvta-stops.xlsx") %>% 
+  select(stop_id, stop_name, stop_lat, stop_lon) %>% 
+  rename(latitude = stop_lat,
+         longitude = stop_lon,
+         station_name = stop_name)
+  pvta_stops$type <- "pvta stop"
+
+vb_stations <- stations %>% 
+  select(station_name, num_docks, latitude, longitude)
+  vb_stations$type <- "valley bike station"
+  
+joined_stops <- pvta_stops %>% 
+  full_join(vb_stations, by = c("type", "longitude","latitude", "station_name"))
+```
+
+#
+```{r, echo=FALSE}
+school_routes <- pvta_stops %>% 
+  filter(stop_id %in% c("425", "491", "499", "505", "509", "533", "535", "542", "554", "555", "584", "1316", "1457", "1467", "1474", "1475", "1904", "1907", "1909", "1921", "5108", "6411", "6415", "6416", "9038", "11115", "897", "913", "923", "929", "935", "937", "983", "993", "1027", "1033", "1044", "1046", "6413", "6953", "8888","9800", "9801","943","140", "142", "229","230","236","238","243","244","245","251","254","255","257","260","261","271","272","277","280","286","287","290", "306","307","320","324","329","333","336","338","2000","2001","2470","2471","3005","3006","3007","3008","8014","8015","8016","8017", "8018", "8019", "8020","8022","9056","9057","9058","9059", "40", "45", "47","48","49","51","52","53", "56","59","60","61","63","66","67","69","72","74","75","78","80","81","83","87","89","92","98", "41","44","46","48","50","51","52","54", "58","60","61","62","64","65","68","70","71","76","77","79","82","84","85","86","90","91","97", "73","75","81","82","93","94","95", "96","112","113","116","132","133","145","166","167","179","184", "221","222","236","243","245","255","257","271","272","277","280",  "286","287","306","307","320","324","329","333","336","338","2000","2001","2470","2471","8010","8014"))
+school_routes$route_id <- "school route"
+
+
+pvta_allcategorizedroutes <- pvta_stops %>% 
+  left_join(school_routes, by= c("stop_id", "station_name","latitude", "longitude","type"))
+pvta_allcategorizedroutes[is.na(pvta_allcategorizedroutes)] <- "normal route"
+  
+pvta_categorizedroutes <- pvta_allcategorizedroutes %>%   
+  filter(route_id == "normal route") %>% 
+  select(stop_id, station_name, latitude, longitude, route_id)
+
+```
+# Information about PVTA
+
+In this document, PVTA refers to the Pioneer Valley Transit Authority's bus system, which services areas between Springfield and Amherst with over 30 different routes. I found it interesting to consider PVTA stop locations in our data analysis of where existing Valley Bikes stations are and how they can expand because of the potential benefits from introducing a partnership between the two. 
+
+For example, some PVTA routes only run during the school year in order to serve areas around the many colleges and universities in the region, so we wanted to remove these stations from our general comparison because these are not routes that commuters and residents can use year round. However, for reference, I have mapped out each of the 7 routes that stop service during the summer. These routes run through parts of the Westfield, Holyoke, South Hadley, and Amherst areas near Westfield State College, Holyoke Community College, Mount Holyoke College, and Hampshire College, respectively. These do not include routes that continue to run but offer reduced service during the summer, such as the B43.
+
+## School Year Routes 
+
+<blockquote>**P11 Holyoke Community College**
+```{r}
+P11 <- pvta_stops %>% 
+  filter(stop_id %in% c("425", "491", "499", "505", "509", "533", "535", "542", "554", "555", "584", "1316", "1457", "1467", "1474", "1475", "1904", "1907", "1909", "1921", "5108", "6411", "6415", "6416", "9038", "11115"))
+
+leaflet() %>% 
+  addTiles() %>% 
+  addProviderTiles(providers$Esri.NatGeoWorldMap) %>% 
+  addCircleMarkers(data= P11, lng = P11$longitude, lat= P11$latitude)
+```
+
+
+**OWL, 10S Westfield State College**
+```{r}
+OWL <- pvta_stops %>% 
+  filter(stop_id %in% c("897", "913", "923", "929", "935", "937", "943"))
+S10 <- pvta_stops %>% 
+filter(stop_id %in% c("897", "929", "943", "983", "993", "1027", "1033", "1044", "1046", "6413", "6953", "8888","9800", "9801"))
+leaflet() %>% 
+  addTiles() %>% 
+  addProviderTiles(providers$Esri.NatGeoWorldMap) %>% 
+  addCircleMarkers(data=OWL, lng = OWL$longitude, lat= OWL$latitude, color= "green") %>% 
+  addCircleMarkers(data=S10, lng = S10$longitude, lat= S10$latitude, color= "blue")
+```
+
+
+**39 Smith College, Hampshire College, Mount Holyoke College**
+```{r}
+M39 <- pvta_stops %>% 
+  filter(stop_id %in% c("140", "142", "229","230","236","238","243","244","245","251","254","255","257","260","261","271","272","277","280","286","287","290", "306","307","320","324","329","333","336","338","2000","2001","2470","2471","3005","3006","3007","3008","8014","8015","8016","8017", "8018", "8019", "8020","8022","9056","9057","9058","9059"))
+leaflet() %>% 
+  addTiles() %>% 
+  addProviderTiles(providers$Esri.NatGeoWorldMap) %>% 
+  addCircleMarkers(data=M39, lng = M39$longitude, lat= M39$latitude)
+```
+
+**34, 35 University of Massachusetts Amherst**
+```{r}
+M34 <- pvta_stops %>% 
+  filter(stop_id %in% c("40", "45", "47","48","49","51","52","53", "56","59","60","61","63","66","67","69","72","74","75","78","80","81","83","87","89","92","98"))
+M35 <- pvta_stops %>% 
+  filter(stop_id %in% c ("41","44","46","48","50","51","52","54", "58","60","61","62","64","65","68","70","71","76","77","79","82","84","85","86","90","91","97"))
+leaflet() %>% 
+  addTiles() %>% 
+  addProviderTiles(providers$Esri.NatGeoWorldMap) %>% 
+  addCircleMarkers(data=M34, lng = M34$longitude, lat= M34$latitude, color= "green") %>% 
+  addCircleMarkers(data=M35, lng = M35$longitude, lat= M35$latitude, color= "blue")
+```
+
+**38 University of Massachusetts Amherst, Amherst College, Hampshire College, Mount Holyoke College**
+```{r}
+M38 <- pvta_stops %>% 
+  filter(stop_id %in% c("73","75","81","82","93","94","95", "96","112","113","116","132","133","145","166","167","179","184", "221","222","236","243","245","255","257","271","272","277","280",  "286","287","306","307","320","324","329","333","336","338","2000","2001","2470","2471","8010","8014"))
+leaflet() %>% 
+  addTiles() %>% 
+  addProviderTiles(providers$Esri.NatGeoWorldMap) %>% 
+  addCircleMarkers(data=M38, lng = M38$longitude, lat= M38$latitude)
+```
+</blockquote>
+
+# Map Comparing PVTA Stops During the Year Vs. Summer Routes
+
+```{r}
+
+leaflet() %>% 
+  addTiles() %>% 
+  addProviderTiles(providers$Esri.NatGeoWorldMap) %>% 
+  addCircles(data=pvta_stops, lng= pvta_stops$longitude, lat= pvta_stops$latitude, color = "blue") %>% 
+  addCircles(data=pvta_categorizedroutes, lng= pvta_categorizedroutes$longitude, lat= pvta_categorizedroutes$latitude, color= "pink") %>% 
+  addMarkers(data=vb_stations, lng = vb_stations$longitude, lat = vb_stations$latitude)
+```
+
+Pink circles = PVTA routes that operate full year
+Blue circles = All PVTA routes
+Markers = Valley Bike stations
+
+The points with only blue circles show PVTA stops that stop service throughout the summer because they primarily serve colleges during the school year. One example is the route that covers Hampshire and Mount Holyoke (34). The purple/pink colored circles show stops that are serviced year-round. Plotted on top of these are the Valley Bike stations, which partially service some of the school-year routes, such as the distance between South Hadley to Amherst. 
+
+
+
+
+
+
+
+
+
+
